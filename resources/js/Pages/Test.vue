@@ -17,13 +17,19 @@ const tasks = ref([{
 const activeList = computed(()=>{
     return tasks.value.sort((a,b) => (a.status - b.status))
 })
+const activeTaskCount = computed(()=>{
+    return tasks.value.filter(i=>i.status===false).length
+})
 const showAddForm = ref(false)
 const taskForm = ref({
     title: '',
     status: false
 })
 const addTaskItem = ()=>{
-    if(taskForm.value.title){
+    let validate = ()=>{
+        return !tasks.value.find(i => i.title.toLowerCase() === taskForm.value.title.toLowerCase())
+    }
+    if(taskForm.value.title && validate()){
         tasks.value.push({
             title: taskForm.value.title,
             status: taskForm.value.status
@@ -31,8 +37,22 @@ const addTaskItem = ()=>{
         taskForm.value.title = ''
         showAddForm.value = false
     }else{
-        alert('Lütfen bir görev ekleyin')
+        alert('Lütfen benzersiz bir görev ekleyin')
     }
+}
+const updateTaskItem = (task)=>{
+    if(task[0] === 'status'){
+        tasks.value.find(i=>i.title === task[1].title).status = task[2]
+    }else{
+        tasks.value.find(i=>i.title === task[1].title).title = task[2]
+    }
+}
+const deleteTaskItem = (task)=>{
+    let del = ()=>{
+        let index = tasks.value.findIndex(i=>i.title === task.title)
+        tasks.value.splice(index, 1)
+    }
+    confirm('Görev silinecek. Emin misiniz?') ? del() : null;
 }
 </script>
 
@@ -105,7 +125,7 @@ const addTaskItem = ()=>{
                     <!--Title-->
                     <div class="flex items-center space-x-2">
                         <span class="text-3xl font-semibold">Görevlerim</span>
-                        <span class="flex justify-center items-center text-xl bg-indigo-200 w-8 h-8 rounded-full">1</span>
+                        <span class="flex justify-center items-center text-xl bg-indigo-200 w-8 h-8 rounded-full" v-text="activeTaskCount"></span>
                     </div>
 
                     <!--Actions-->
@@ -117,8 +137,13 @@ const addTaskItem = ()=>{
                 <!--Tasks-->
                 <div class="flex flex-col space-y-2 w-full">
                     <!--Task-->
-                    <template v-for="i in activeList">
-                        <task-item :task="i" v-model:status="tasks.find(j=>j.title === i.title).status"/>
+                    <template v-for="i in activeList" :key="i.title">
+                        <task-item
+                            :task="i"
+                            v-model:status="tasks.find(j=>j.title === i.title).status"
+                            @update="updateTaskItem($event)"
+                            @delete="deleteTaskItem($event)"
+                        />
                     </template>
                 </div>
 
