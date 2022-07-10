@@ -20,13 +20,13 @@ onMounted(()=>{
     <!--Task Item-->
     <div
         v-if="!showEditForm"
-        class="flex justify-between w-full items-center border p-4 rounded-xl hover:shadow"
+        class="flex justify-between w-full items-center border p-4 rounded-full hover:shadow"
          :class="[
              {'bg-slate-100': task.status}
          ]"
     >
         <!--Task Info-->
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-3">
             <!--Checkbox-->
             <input
                 @change="$emit('update',['status',task,$event.target.checked])"

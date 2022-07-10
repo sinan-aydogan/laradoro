@@ -6,7 +6,9 @@ import {
     faEllipsis,
     faPen,
     faTrash,
-    faPlus
+    faPlus,
+    faPlay,
+    faPause,
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faArrowRotateLeft, faSliders, faGlobe, faEllipsis, faPen, faTrash, faPlus)
+library.add(faArrowRotateLeft, faSliders, faGlobe, faEllipsis, faPen, faTrash, faPlus, faPlay, faPause)
