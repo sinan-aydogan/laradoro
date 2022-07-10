@@ -9,6 +9,11 @@ import {
     faPlus,
     faPlay,
     faPause,
+    faClock,
+    faBell,
+    faArrowRotateRight,
+    faMessage,
+    faChevronRight
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faArrowRotateLeft, faSliders, faGlobe, faEllipsis, faPen, faTrash, faPlus, faPlay, faPause)
+library.add(faArrowRotateLeft, faSliders, faGlobe, faEllipsis, faPen, faTrash, faPlus, faPlay, faPause, faClock, faBell, faMessage, faArrowRotateRight, faChevronRight)

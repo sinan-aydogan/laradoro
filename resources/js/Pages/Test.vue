@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import HeaderMenuItem from '@/Components/HeaderMenuItem.vue'
 import TaskItem from '@/Components/TaskItem.vue'
+import DropDown from '@/Components/DropDown.vue'
 
 /*Task functions*/
 const tasks = ref([
@@ -87,6 +88,35 @@ const levels = ref({
         longRest: 10
     }
 })
+const activeLevel = ref('popular')
+
+/*Customize menu*/
+const customizeMenuLinks = ref([
+    {
+        id: 'lvl',
+        label: 'Çalışma Modları',
+        subLabel: 'Farklı modları seçebilirsiniz',
+        icon: 'clock'
+    },
+    {
+        id: 'alarm',
+        label: 'Alarm',
+        subLabel: 'Alarm seslerini değiştirebilirsiniz',
+        icon: 'bell'
+    },
+    {
+        id: 'auto',
+        label: 'Otomatik Başlama',
+        subLabel: 'Çalışmadan molaya otomatik geçiş',
+        icon: 'arrow-rotate-right'
+    },
+    {
+        id: 'notify',
+        label: 'Bildirimler',
+        subLabel: 'Tarayıcınızdan bildirim alın',
+        icon: 'message'
+    }
+])
 </script>
 
 <template>
@@ -101,10 +131,33 @@ const levels = ref({
             <!--Feature-->
             <div class="flex space-x-2">
                 <!--Customize-->
-                <header-menu-item>
-                    <font-awesome-icon icon="sliders"/>
-                    <span>Özelleştir</span>
-                </header-menu-item>
+                <drop-down>
+                    <template #trigger>
+                        <font-awesome-icon icon="sliders"/>
+                        <span>Özelleştir</span>
+                    </template>
+                    <template #content>
+                        <div class="space-y-4">
+                            <template v-for="i in customizeMenuLinks">
+                                <div class="flex justify-between w-full items-center px-6 py-2 hover:bg-indigo-50 rounded-lg group cursor-pointer transition duration-200">
+                                    <div class="flex items-center space-x-4">
+                                        <!--Icon-->
+                                        <font-awesome-icon :icon="i.icon" size="lg" class="text-slate-700 group-hover:text-indigo-600"/>
+                                        <!--Label-->
+                                        <div class="flex flex-col">
+                                            <span v-text="i.label" class="font-semibold text-slate-700 group-hover:text-indigo-600"></span>
+                                            <span v-text="i.subLabel" class="text-xs text-slate-500 group-hover:text-indigo-600"></span>
+                                        </div>
+                                    </div>
+                                    <!--Trigger Icon-->
+                                    <div>
+                                        <font-awesome-icon icon="chevron-right"/>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </drop-down>
 
                 <!--Reset Timer-->
                 <header-menu-item>
@@ -139,10 +192,10 @@ const levels = ref({
 
                 <!--Timer-->
                 <div
-                    class="flex flex-col justify-center items-center border-8 border-indigo-300 text-indigo-600 rounded-full h-80 w-80 mb-10">
-                    <span class="text-8xl mt-8 mb-12 font-bold font-sans">15:00</span>
+                    class="flex flex-col justify-center items-center border-8 border-indigo-200 text-indigo-600 rounded-full h-[25rem] w-[25rem] mb-10">
+                    <span class="text-[7rem] mt-4 mb-6 font-semibold font-sans">15:00</span>
                     <span class="text-xl">Level</span>
-                    <span class="font-bold text-x">Custom</span>
+                    <span class="font-bold text-xl">Custom</span>
                 </div>
 
                 <!--Activity Button-->
