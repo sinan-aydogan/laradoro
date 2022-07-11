@@ -13,7 +13,8 @@ import {
     faBell,
     faArrowRotateRight,
     faMessage,
-    faChevronRight
+    faChevronRight,
+    faArrowLeftLong
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faArrowRotateLeft, faSliders, faGlobe, faEllipsis, faPen, faTrash, faPlus, faPlay, faPause, faClock, faBell, faMessage, faArrowRotateRight, faChevronRight)
+library.add(faArrowRotateLeft, faSliders, faGlobe, faEllipsis, faPen, faTrash, faPlus, faPlay, faPause, faClock, faBell, faMessage, faArrowRotateRight, faChevronRight, faArrowLeftLong)

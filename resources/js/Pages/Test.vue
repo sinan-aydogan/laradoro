@@ -63,26 +63,31 @@ const deleteTaskItem = (task) => {
 /*Timer functions*/
 const levels = ref({
     baby: {
+        label: 'Yeni Başlayan',
         pomodoro: 10,
         shortRest: 5,
         longRest: 10
     },
     popular: {
+        label: 'Popüler',
         pomodoro: 20,
         shortRest: 5,
         longRest: 15
     },
     medium: {
+        label: 'Orta',
         pomodoro: 40,
         shortRest: 8,
         longRest: 20
     },
     extended: {
+        label: 'Gelişmiş',
         pomodoro: 60,
         shortRest: 10,
         longRest: 25
     },
     custom: {
+        label: 'Özel',
         pomodoro: 15,
         shortRest: 5,
         longRest: 10
@@ -91,9 +96,10 @@ const levels = ref({
 const activeLevel = ref('popular')
 
 /*Customize menu*/
+const activeCustomizeLink = ref('')
 const customizeMenuLinks = ref([
     {
-        id: 'lvl',
+        id: 'level',
         label: 'Çalışma Modları',
         subLabel: 'Farklı modları seçebilirsiniz',
         icon: 'clock'
@@ -117,6 +123,30 @@ const customizeMenuLinks = ref([
         icon: 'message'
     }
 ])
+
+/*Alarm*/
+const alarm = ref({
+    sound: '',
+    volume: 10
+})
+const alarms = [
+    {
+        id: 'bird',
+        label: 'Kuş Sesi',
+    },
+    {
+        id: 'bip',
+        label: 'Bipleme',
+    },
+    {
+        id: 'can',
+        label: 'Çan Sesi',
+    },
+    {
+        id: 'mute',
+        label: 'Sessiz',
+    }
+]
 </script>
 
 <template>
@@ -131,7 +161,7 @@ const customizeMenuLinks = ref([
             <!--Feature-->
             <div class="flex space-x-2">
                 <!--Customize-->
-                <drop-down>
+                <drop-down :content="customizeMenuLinks" v-model="activeCustomizeLink">
                     <template #trigger>
                         <font-awesome-icon icon="sliders"/>
                         <span>Özelleştir</span>
@@ -139,14 +169,18 @@ const customizeMenuLinks = ref([
                     <template #content>
                         <div class="space-y-4">
                             <template v-for="i in customizeMenuLinks">
-                                <div class="flex justify-between w-full items-center px-6 py-2 hover:bg-indigo-50 rounded-lg group cursor-pointer transition duration-200">
+                                <div @click="activeCustomizeLink = i.id"
+                                     class="flex justify-between w-full items-center px-6 py-2 hover:bg-indigo-50 rounded-lg group cursor-pointer transition duration-200">
                                     <div class="flex items-center space-x-4">
                                         <!--Icon-->
-                                        <font-awesome-icon :icon="i.icon" size="lg" class="text-slate-700 group-hover:text-indigo-600"/>
+                                        <font-awesome-icon :icon="i.icon" size="lg"
+                                                           class="text-slate-700 group-hover:text-indigo-600"/>
                                         <!--Label-->
                                         <div class="flex flex-col">
-                                            <span v-text="i.label" class="font-semibold text-slate-700 group-hover:text-indigo-600"></span>
-                                            <span v-text="i.subLabel" class="text-xs text-slate-500 group-hover:text-indigo-600"></span>
+                                            <span v-text="i.label"
+                                                  class="font-semibold text-slate-700 group-hover:text-indigo-600"></span>
+                                            <span v-text="i.subLabel"
+                                                  class="text-xs text-slate-500 group-hover:text-indigo-600"></span>
                                         </div>
                                     </div>
                                     <!--Trigger Icon-->
@@ -156,6 +190,68 @@ const customizeMenuLinks = ref([
                                 </div>
                             </template>
                         </div>
+                    </template>
+
+                    <template #level>
+                        <!--Header-->
+                        <div @click="activeCustomizeLink=''" class="flex space-x-4 items-center mb-4 text-slate-700 cursor-pointer">
+                            <font-awesome-icon icon="arrow-left-long" size="lg"/>
+                            <h2 class="text-xl font-bold">Çalışma modunu özelleştir</h2>
+                        </div>
+
+                        <!--Content-->
+                        <div class="flex flex-col space-y-4">
+                            <template v-for="(i,index) in levels">
+                                <div class="flex space-x-2 items-center">
+                                    <input type="radio" class="w-6 h-6" :id="index" :value="index" name="active-level" v-model="activeLevel"/>
+                                    <div>
+                                        <span v-text="i.label" class="font-bold"/>
+                                        <div>
+                                            <span v-text="i.pomodoro" class="text-slate-400 after:content-['dk\00a0•\00a0']"/>
+                                            <span v-text="i.shortRest" class="text-slate-400 after:content-['dk\00a0•\00a0']"/>
+                                            <span v-text="i.longRest" class="text-slate-400 after:content-['dk']"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                    </template>
+                    <template #alarm>
+                        <!--Header-->
+                        <div @click="activeCustomizeLink=''" class="flex space-x-4 items-center mb-4 text-slate-700 cursor-pointer">
+                            <font-awesome-icon icon="arrow-left-long" size="lg"/>
+                            <h2 class="text-xl font-bold">Alarmı özelleştir</h2>
+                        </div>
+
+                        <!--Content-->
+                        <div class="flex flex-col space-y-4">
+                            <div>
+                                <span class="flex jus font-bold mb-2">Alarm melodisi</span>
+                                <div class="flex justify-center">
+                                    <template v-for="i in alarms">
+                                        <span
+                                            @click="alarm.sound = i.id"
+                                            v-text="i.label"
+                                            class="flex flex-grow border border-r-0 last:border-r first:rounded-l-lg last:rounded-r-lg p-2 cursor-pointer hover:bg-blue-600 active:bg-blue-700 hover:text-white transition duration-200"
+                                            :class="[{
+                                                'bg-blue-600 text-white': i.id === alarm.sound,
+                                            }]"
+                                        ></span>
+                                    </template>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between">
+                                    <span class="font-bold">Ses seviyesi</span>
+                                    <span class="font-bold after:content-['%']" v-text="alarm.volume"></span>
+                                </div>
+                                <div class="flex w-full">
+                                    <input type="range" v-model="alarm.volume" class="flex w-full py-4"/>
+                                </div>
+                            </div>
+                        </div>
+
                     </template>
                 </drop-down>
 
@@ -193,9 +289,9 @@ const customizeMenuLinks = ref([
                 <!--Timer-->
                 <div
                     class="flex flex-col justify-center items-center border-8 border-indigo-200 text-indigo-600 rounded-full h-[25rem] w-[25rem] mb-10">
-                    <span class="text-[7rem] mt-4 mb-6 font-semibold font-sans">15:00</span>
-                    <span class="text-xl">Level</span>
-                    <span class="font-bold text-xl">Custom</span>
+                    <span class="text-[7rem] mt-4 mb-6 font-semibold font-sans" v-text="levels[activeLevel].pomodoro"></span>
+                    <span class="text-xl" >Mod</span>
+                    <span class="font-bold text-xl" v-text="levels[activeLevel].label"></span>
                 </div>
 
                 <!--Activity Button-->
