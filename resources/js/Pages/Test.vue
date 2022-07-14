@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref } from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import HeaderMenuItem from '@/Components/HeaderMenuItem.vue'
 import TaskItem from '@/Components/TaskItem.vue'
 import DropDown from '@/Components/DropDown.vue'
+import SwitchInput from "@/Components/SwitchInput.vue";
 
 /*Task functions*/
 const tasks = ref([
@@ -70,7 +71,7 @@ const levels = ref({
     },
     popular: {
         label: 'Popüler',
-        pomodoro: 20,
+        pomodoro: .1,
         shortRest: 5,
         longRest: 15
     },
@@ -94,6 +95,32 @@ const levels = ref({
     }
 })
 const activeLevel = ref('popular')
+
+const counter = ref({
+    timer: levels.value[activeLevel.value].pomodoro * 60,
+    isRunning: false,
+})
+
+const minute = computed(() => {
+    let i = Math.floor(counter.value.timer / 60)
+    return i > 9 ? i : '0' + i
+})
+
+const second = computed(() => {
+    let i = Math.floor(counter.value.timer % 60)
+
+    return i > 9 ? i : '0' + i
+})
+
+const startTimer = () => {
+    counter.value.isRunning = true
+    let fn = setInterval(() => {
+        counter.value.timer--
+        if (counter.value.timer === 0) {
+            clearInterval(fn)
+        }
+    }, 1000)
+};
 
 /*Customize menu*/
 const activeCustomizeLink = ref('')
@@ -126,27 +153,66 @@ const customizeMenuLinks = ref([
 
 /*Alarm*/
 const alarm = ref({
-    sound: '',
+    sound: 'bip',
     volume: 10
 })
 const alarms = [
     {
         id: 'bird',
         label: 'Kuş Sesi',
+        file: 'alarm_bird.mp3'
     },
     {
         id: 'bip',
         label: 'Bipleme',
+        file: 'alarm_beep.mp3'
     },
     {
         id: 'can',
         label: 'Çan Sesi',
+        file: 'alarm_bell.mp3'
     },
     {
         id: 'mute',
         label: 'Sessiz',
+        file: 'mute'
     }
 ]
+const audioChannel = ref(null)
+
+onMounted(() => {
+    audioChannel.value = new Audio()
+})
+
+const playSound = (sound, volume) => {
+    audioChannel.value.src = sound
+    audioChannel.value.volume = volume
+    audioChannel.value.play()
+}
+/*Auto*/
+const autoStart = ref({
+    pomodoro: true,
+    rest: true
+})
+
+/*Notify*/
+const notify = ref(false)
+
+/*Reset*/
+const reset = () => {
+    let resetAll = () => {
+        tasks.value = []
+        counter.value.timer = levels.value[activeLevel.value].pomodoro * 60
+        counter.value.isRunning = false
+        activeLevel.value = 'popular'
+        alarm.value.sound = 'bip'
+        alarm.value.volume = 50
+        autoStart.value.pomodoro = true
+        autoStart.value.rest = true
+        notify.value = false
+    }
+    confirm('Oturumu ve seçenekleri sıfırlamak istediğinize emin misiniz?') ? resetAll() : null
+}
 </script>
 
 <template>
@@ -194,7 +260,8 @@ const alarms = [
 
                     <template #level>
                         <!--Header-->
-                        <div @click="activeCustomizeLink=''" class="flex space-x-4 items-center mb-4 text-slate-700 cursor-pointer">
+                        <div @click="activeCustomizeLink=''"
+                             class="flex space-x-4 items-center mb-4 text-slate-700 cursor-pointer">
                             <font-awesome-icon icon="arrow-left-long" size="lg"/>
                             <h2 class="text-xl font-bold">Çalışma modunu özelleştir</h2>
                         </div>
@@ -203,12 +270,15 @@ const alarms = [
                         <div class="flex flex-col space-y-4">
                             <template v-for="(i,index) in levels">
                                 <div class="flex space-x-2 items-center">
-                                    <input type="radio" class="w-6 h-6" :id="index" :value="index" name="active-level" v-model="activeLevel"/>
+                                    <input type="radio" class="w-6 h-6" :id="index" :value="index" name="active-level"
+                                           v-model="activeLevel"/>
                                     <div>
                                         <span v-text="i.label" class="font-bold"/>
                                         <div>
-                                            <span v-text="i.pomodoro" class="text-slate-400 after:content-['dk\00a0•\00a0']"/>
-                                            <span v-text="i.shortRest" class="text-slate-400 after:content-['dk\00a0•\00a0']"/>
+                                            <span v-text="i.pomodoro"
+                                                  class="text-slate-400 after:content-['dk\00a0•\00a0']"/>
+                                            <span v-text="i.shortRest"
+                                                  class="text-slate-400 after:content-['dk\00a0•\00a0']"/>
                                             <span v-text="i.longRest" class="text-slate-400 after:content-['dk']"/>
                                         </div>
                                     </div>
@@ -219,7 +289,8 @@ const alarms = [
                     </template>
                     <template #alarm>
                         <!--Header-->
-                        <div @click="activeCustomizeLink=''" class="flex space-x-4 items-center mb-4 text-slate-700 cursor-pointer">
+                        <div @click="activeCustomizeLink=''"
+                             class="flex space-x-4 items-center mb-4 text-slate-700 cursor-pointer">
                             <font-awesome-icon icon="arrow-left-long" size="lg"/>
                             <h2 class="text-xl font-bold">Alarmı özelleştir</h2>
                         </div>
@@ -227,14 +298,13 @@ const alarms = [
                         <!--Content-->
                         <div class="flex flex-col space-y-4">
                             <div>
-                                <span class="flex jus font-bold mb-2">Alarm melodisi</span>
+                                <span class="flex font-bold mb-2">Alarm melodisi</span>
                                 <div class="flex justify-center">
                                     <template v-for="i in alarms">
-                                        <span
-                                            @click="alarm.sound = i.id"
-                                            v-text="i.label"
-                                            class="flex flex-grow border border-r-0 last:border-r first:rounded-l-lg last:rounded-r-lg p-2 cursor-pointer hover:bg-blue-600 active:bg-blue-700 hover:text-white transition duration-200"
-                                            :class="[{
+                                        <span @click="playSound('/sounds/'+alarms.find(j=>j.id === i.id).file, alarm.volume/100)"
+                                              v-text="i.label"
+                                              class="flex flex-grow border border-r-0 last:border-r first:rounded-l-lg last:rounded-r-lg p-2 cursor-pointer hover:bg-blue-600 active:bg-blue-700 hover:text-white transition duration-200"
+                                              :class="[{
                                                 'bg-blue-600 text-white': i.id === alarm.sound,
                                             }]"
                                         ></span>
@@ -253,10 +323,51 @@ const alarms = [
                         </div>
 
                     </template>
+                    <template #auto>
+                        <!--Header-->
+                        <div @click="activeCustomizeLink=''"
+                             class="flex space-x-4 items-center mb-4 text-slate-700 cursor-pointer">
+                            <font-awesome-icon icon="arrow-left-long" size="lg"/>
+                            <h2 class="text-xl font-bold">Sayaç başlatmayı özelleştir</h2>
+                        </div>
+
+                        <!--Content-->
+                        <div class="flex flex-col space-y-2 text-slate-700 font-bold mt-8">
+                            <!--Start pomodoro-->
+                            <div class="flex w-full justify-between items-center">
+                                <span>Çalışmayı otomatik başlat</span>
+                                <switch-input v-model="autoStart.pomodoro"/>
+                            </div>
+                            <!--Start rest-->
+                            <div class="flex w-full justify-between items-center">
+                                <span>Molayı otomatik başlat</span>
+                                <switch-input v-model="autoStart.rest"/>
+                            </div>
+                        </div>
+
+                    </template>
+                    <template #notify>
+                        <!--Header-->
+                        <div @click="activeCustomizeLink=''"
+                             class="flex space-x-4 items-center mb-4 text-slate-700 cursor-pointer">
+                            <font-awesome-icon icon="arrow-left-long" size="lg"/>
+                            <h2 class="text-xl font-bold">Bildirimi özelleştir</h2>
+                        </div>
+
+                        <!--Content-->
+                        <div class="flex flex-col space-y-2 text-slate-700 font-bold mt-8">
+                            <!--Start pomodoro-->
+                            <div class="flex w-full justify-between items-center">
+                                <span>Bittiğinde tarayıcı bildirimi göster</span>
+                                <switch-input v-model="notify"/>
+                            </div>
+                        </div>
+
+                    </template>
                 </drop-down>
 
                 <!--Reset Timer-->
-                <header-menu-item>
+                <header-menu-item @click="reset">
                     <font-awesome-icon icon="arrow-rotate-left"/>
                     <span>Oturumu Sıfırla</span>
                 </header-menu-item>
@@ -289,15 +400,27 @@ const alarms = [
                 <!--Timer-->
                 <div
                     class="flex flex-col justify-center items-center border-8 border-indigo-200 text-indigo-600 rounded-full h-[25rem] w-[25rem] mb-10">
-                    <span class="text-[7rem] mt-4 mb-6 font-semibold font-sans" v-text="levels[activeLevel].pomodoro"></span>
-                    <span class="text-xl" >Mod</span>
+                    <div class="text-[7rem] mt-4 mb-6 font-semibold font-sans">
+                        <span v-text="minute" class="after:content-[':']"></span>
+                        <span v-text="second"></span>
+                    </div>
+                    <span class="text-xl">Mod</span>
                     <span class="font-bold text-xl" v-text="levels[activeLevel].label"></span>
                 </div>
 
                 <!--Activity Button-->
-                <button class="bg-indigo-500 text-white px-8 py-2 space-x-4 text-3xl rounded-full">
-                    <font-awesome-icon icon="play"/>
-                    <span>Başlat</span>
+                <button
+                    @click="startTimer"
+                    class=" text-white px-8 py-2 space-x-4 text-3xl rounded-full"
+                    :class="[
+                        {
+                            'bg-rose-500': counter.isRunning,
+                            'bg-indigo-500': !counter.isRunning
+                        }
+                    ]"
+                >
+                    <font-awesome-icon :icon="counter.isRunning ? 'pause' : 'play'"/>
+                    <span v-text="counter.isRunning ? 'Durdur' : 'Başlat'"></span>
                 </button>
             </div>
 
