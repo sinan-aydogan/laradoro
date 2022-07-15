@@ -154,7 +154,7 @@ const customizeMenuLinks = ref([
 /*Alarm*/
 const alarm = ref({
     sound: 'bip',
-    volume: 10
+    volume: 50
 })
 const alarms = [
     {
@@ -175,7 +175,6 @@ const alarms = [
     {
         id: 'mute',
         label: 'Sessiz',
-        file: 'mute'
     }
 ]
 const audioChannel = ref(null)
@@ -185,10 +184,13 @@ onMounted(() => {
 })
 
 const playSound = (sound, volume) => {
-    audioChannel.value.src = sound
-    audioChannel.value.volume = volume
-    audioChannel.value.play()
+    if(sound) {
+        audioChannel.value.src = sound
+        audioChannel.value.volume = volume
+        audioChannel.value.play()
+    }
 }
+
 /*Auto*/
 const autoStart = ref({
     pomodoro: true,
@@ -301,7 +303,7 @@ const reset = () => {
                                 <span class="flex font-bold mb-2">Alarm melodisi</span>
                                 <div class="flex justify-center">
                                     <template v-for="i in alarms">
-                                        <span @click="playSound('/sounds/'+alarms.find(j=>j.id === i.id).file, alarm.volume/100)"
+                                        <span @click="playSound(i.id !== 'mute' ? '/sounds/'+alarms.find(j=>j.id === i.id).file : '', alarm.volume/100); alarm.sound = i.id"
                                               v-text="i.label"
                                               class="flex flex-grow border border-r-0 last:border-r first:rounded-l-lg last:rounded-r-lg p-2 cursor-pointer hover:bg-blue-600 active:bg-blue-700 hover:text-white transition duration-200"
                                               :class="[{
