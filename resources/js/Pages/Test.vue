@@ -4,6 +4,7 @@ import HeaderMenuItem from '@/Components/HeaderMenuItem.vue'
 import TaskItem from '@/Components/TaskItem.vue'
 import DropDown from '@/Components/DropDown.vue'
 import SwitchInput from "@/Components/SwitchInput.vue";
+import {useFocus} from '@vueuse/core'
 
 /*Task functions*/
 const tasks = ref([
@@ -30,6 +31,11 @@ const showAddForm = ref(false)
 const taskForm = ref({
     title: '',
     status: false
+})
+const taskInput = ref(null)
+const {focused} = useFocus(taskInput, {initialValue: true})
+onMounted(() => {
+    focused.value = true
 })
 const addTaskItem = () => {
     let validate = () => {
@@ -71,7 +77,7 @@ const levels = ref({
     },
     popular: {
         label: 'Popüler',
-        pomodoro: .1,
+        pomodoro: 25,
         shortRest: 5,
         longRest: 15
     },
@@ -97,30 +103,99 @@ const levels = ref({
 const activeLevel = ref('popular')
 
 const counter = ref({
-    timer: levels.value[activeLevel.value].pomodoro * 60,
+    worker: 'pomodoro',
+    pomodoro: {
+        timer: levels.value[activeLevel.value].pomodoro * 60,
+        lap: 0,
+    },
+    shortRest: {
+        timer: levels.value[activeLevel.value].shortRest * 60,
+        lap: 0,
+    },
+    longRest: {
+        timer: levels.value[activeLevel.value].longRest * 60,
+        lap: 0,
+    },
     isRunning: false,
 })
 
 const minute = computed(() => {
-    let i = Math.floor(counter.value.timer / 60)
+    let i = Math.floor(counter.value[counter.value.worker].timer / 60)
     return i > 9 ? i : '0' + i
 })
 
 const second = computed(() => {
-    let i = Math.floor(counter.value.timer % 60)
+    let i = Math.floor(counter.value[counter.value.worker].timer % 60)
 
     return i > 9 ? i : '0' + i
 })
 
+const timerFn = ref()
+
 const startTimer = () => {
     counter.value.isRunning = true
-    let fn = setInterval(() => {
-        counter.value.timer--
-        if (counter.value.timer === 0) {
-            clearInterval(fn)
+    timerFn.value = setInterval(() => {
+        /*Countdown*/
+        counter.value[counter.value.worker].timer--
+
+        /*Control zero value*/
+        if (counter.value[counter.value.worker].timer === 0) {
+
+            /*Update worker lap*/
+            counter.value[counter.value.worker].lap++
+
+            /*Restart*/
+            let restart = () => {
+                counter.value.isRunning = false
+                playSound('/sounds/' + alarms.find(i => i.id === alarm.value.sound).file, alarm.value.volume / 100)
+                clearInterval(fn)
+
+                /*Next Action*/
+                if (autoStart.value.rest) {
+                    startTimer()
+                }
+            }
+
+            /*Set worker type*/
+
+            /*When pomodoro finished*/
+            if (counter.value.worker === 'pomodoro') {
+                counter.value.worker = 'shortRest'
+                counter.value.pomodoro.timer = levels.value[activeLevel.value].pomodoro * 60
+                restart()
+                return;
+            }
+
+            /*When short rest finished*/
+            if (counter.value.worker === 'shortRest' && (counter.value.shortRest.lap % 4 > 0)) {
+                counter.value.worker = 'pomodoro'
+                counter.value.shortRest.timer = levels.value[activeLevel.value].shortRest * 60
+                restart()
+                return;
+            }
+
+            if (counter.value.worker === 'shortRest' && (counter.value.shortRest.lap % 4 === 0) && counter.value.shortRest.lap !== 0) {
+                counter.value.worker = 'longRest'
+                counter.value.shortRest.timer = levels.value[activeLevel.value].shortRest * 60
+                restart()
+                return;
+            }
+
+            if (counter.value.worker === 'longRest') {
+                counter.value.worker = 'pomodoro'
+                counter.value.longRest.timer = levels.value[activeLevel.value].longRest * 60
+                restart()
+                return;
+            }
+
         }
     }, 1000)
 };
+
+const pauseTimer = () => {
+    counter.value.isRunning = false
+    clearInterval(timerFn.value)
+}
 
 /*Customize menu*/
 const activeCustomizeLink = ref('')
@@ -184,7 +259,7 @@ onMounted(() => {
 })
 
 const playSound = (sound, volume) => {
-    if(sound) {
+    if (sound) {
         audioChannel.value.src = sound
         audioChannel.value.volume = volume
         audioChannel.value.play()
@@ -303,10 +378,11 @@ const reset = () => {
                                 <span class="flex font-bold mb-2">Alarm melodisi</span>
                                 <div class="flex justify-center">
                                     <template v-for="i in alarms">
-                                        <span @click="playSound(i.id !== 'mute' ? '/sounds/'+alarms.find(j=>j.id === i.id).file : '', alarm.volume/100); alarm.sound = i.id"
-                                              v-text="i.label"
-                                              class="flex flex-grow border border-r-0 last:border-r first:rounded-l-lg last:rounded-r-lg p-2 cursor-pointer hover:bg-blue-600 active:bg-blue-700 hover:text-white transition duration-200"
-                                              :class="[{
+                                        <span
+                                            @click="playSound(i.id !== 'mute' ? '/sounds/'+alarms.find(j=>j.id === i.id).file : '', alarm.volume/100); alarm.sound = i.id"
+                                            v-text="i.label"
+                                            class="flex flex-grow border border-r-0 last:border-r first:rounded-l-lg last:rounded-r-lg p-2 cursor-pointer hover:bg-blue-600 active:bg-blue-700 hover:text-white transition duration-200"
+                                            :class="[{
                                                 'bg-blue-600 text-white': i.id === alarm.sound,
                                             }]"
                                         ></span>
@@ -390,18 +466,43 @@ const reset = () => {
                 <span class="font-bold text-2xl">Sıkı bir çalışmaya ne dersin? 🚀</span>
 
                 <!--Tabs-->
-                <div class="flex mt-16 mb-10 font-semibold border rounded-full">
+                <div class="flex mt-16 mb-10 font-semibold">
                     <!--Pomodoro-->
-                    <div class="border-r px-4 py-2">Pomodoro</div>
+                    <div class="border-r px-4 py-2 border rounded-l-full"
+                         :class="counter.worker === 'pomodoro' ? 'bg-indigo-500 text-white' : null">
+                        Pomodoro {{ counter.pomodoro.lap }}
+                    </div>
                     <!--Rest-->
-                    <div class="border-r px-4 py-2">Rest</div>
+                    <div class="border-y px-4 py-2"
+                         :class="counter.worker === 'shortRest' ? 'bg-emerald-500 text-white' : null">
+                        Kısa Mola {{ counter.shortRest.lap }}
+                    </div>
                     <!--Long Rest-->
-                    <div class="px-4 py-2">Long Reset</div>
+                    <div class="px-4 py-2 border rounded-r-full"
+                         :class="counter.worker === 'longRest' ? 'bg-pink-500 text-white' : null">
+                        Uzun Mola {{ counter.longRest.lap }}
+                    </div>
+                </div>
+
+                <!--Lap-->
+                <div
+                    class="flex border-slate-200 shadow bg-slate-50 -mt-10 mb-10 border-b border-x rounded-bl rounded-br px-8 py-1">
+                    <span class="text-lg font-bold">
+                        1 tur - {{ Math.floor((levels[activeLevel].pomodoro / 60) * counter.pomodoro.lap) }} dakika
+                    </span>
                 </div>
 
                 <!--Timer-->
                 <div
-                    class="flex flex-col justify-center items-center border-8 border-indigo-200 text-indigo-600 rounded-full h-[25rem] w-[25rem] mb-10">
+                    class="flex flex-col justify-center items-center border-8 rounded-full h-[25rem] w-[25rem] mb-10"
+                    :class="[
+                        {
+                            'border-indigo-200 bg-indigo-50/40 text-indigo-600' :counter.worker === 'pomodoro',
+                            'border-emerald-200 bg-emerald-50/40 text-emerald-600' :counter.worker === 'shortRest',
+                            'border-pink-200 bg-pink-50/40 text-pink-600' :counter.worker === 'longRest'
+                        }
+                    ]"
+                >
                     <div class="text-[7rem] mt-4 mb-6 font-semibold font-sans">
                         <span v-text="minute" class="after:content-[':']"></span>
                         <span v-text="second"></span>
@@ -412,17 +513,21 @@ const reset = () => {
 
                 <!--Activity Button-->
                 <button
-                    @click="startTimer"
+                    @click="counter.isRunning ? pauseTimer() : startTimer()"
                     class=" text-white px-8 py-2 space-x-4 text-3xl rounded-full"
                     :class="[
                         {
                             'bg-rose-500': counter.isRunning,
-                            'bg-indigo-500': !counter.isRunning
+                            'bg-indigo-500': !counter.isRunning,
+                            'pr-6': counter.isRunning,
                         }
                     ]"
                 >
                     <font-awesome-icon :icon="counter.isRunning ? 'pause' : 'play'"/>
-                    <span v-text="counter.isRunning ? 'Durdur' : 'Başlat'"></span>
+                    <span v-text="counter.isRunning ? 'Durdur' : 'Başlat'"
+                          :class="[{'border-r pr-4': counter.isRunning}]"></span>
+                    <font-awesome-icon v-if="counter.isRunning" icon="forward"
+                                       class="hover:scale-110 hover:animate-spin transition-all"/>
                 </button>
             </div>
 
@@ -474,7 +579,9 @@ const reset = () => {
                     >
                         <input type="text" @keydown.enter="addTaskItem" v-model="taskForm.title"
                                class="flex w-full border-none focus:ring-0 px-2 text-lg"
-                               placeholder="Görevinizi buraya yazın..."/>
+                               placeholder="Görevinizi buraya yazın..."
+                               ref="taskInput"
+                        />
                         <div class="space-x-2">
                             <!--Save-->
                             <button @click="addTaskItem" class="bg-emerald-500 text-white px-2 py-1 rounded-lg">Listeye
