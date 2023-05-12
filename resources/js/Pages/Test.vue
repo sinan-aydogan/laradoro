@@ -185,7 +185,6 @@ const startTimer = () => {
                 counter.value.worker = 'pomodoro'
                 counter.value.longRest.timer = levels.value[activeLevel.value].longRest * 60
                 restart()
-                return;
             }
 
         }
@@ -290,6 +289,12 @@ const reset = () => {
     }
     confirm('Oturumu ve seçenekleri sıfırlamak istediğinize emin misiniz?') ? resetAll() : null
 }
+
+const changeLevel = () => {
+    counter.value.pomodoro.timer = levels.value[activeLevel.value].pomodoro * 60
+    counter.value.shortRest.timer = levels.value[activeLevel.value].shortRest * 60
+    counter.value.longRest.timer = levels.value[activeLevel.value].longRest * 60
+}
 </script>
 
 <template>
@@ -346,20 +351,30 @@ const reset = () => {
                         <!--Content-->
                         <div class="flex flex-col space-y-4">
                             <template v-for="(i,index) in levels">
-                                <div class="flex space-x-2 items-center">
-                                    <input type="radio" class="w-6 h-6" :id="index" :value="index" name="active-level"
-                                           v-model="activeLevel"/>
-                                    <div>
+                                <label class="flex space-x-2 items-center hover:cursor-pointer"
+                                       :class="[
+                                         {'pointer-events-none cursor-not-allowed': (index === activeLevel && counter.isRunning)},
+                                         {'opacity-50': (index !== activeLevel && counter.isRunning)}
+                                         ]">
+                                    <input type="radio"
+                                           class="w-6 h-6"
+                                           :id="index"
+                                           :value="index"
+                                           name="active-level"
+                                           v-model="activeLevel"
+                                           @change="changeLevel"
+                                    />
+                                    <span>
                                         <span v-text="i.label" class="font-bold"/>
-                                        <div>
+                                        <span class="block">
                                             <span v-text="i.pomodoro"
                                                   class="text-slate-400 after:content-['dk\00a0•\00a0']"/>
                                             <span v-text="i.shortRest"
                                                   class="text-slate-400 after:content-['dk\00a0•\00a0']"/>
                                             <span v-text="i.longRest" class="text-slate-400 after:content-['dk']"/>
-                                        </div>
-                                    </div>
-                                </div>
+                                        </span>
+                                    </span>
+                                </label>
                             </template>
                         </div>
 
